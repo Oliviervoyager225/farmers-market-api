@@ -1,0 +1,120 @@
+### Variables (à adapter selon les résultats)
+@baseUrl = http://localhost:8000/api/v1
+# Remplacez <VOTRE_TOKEN_ICI> par le token renvoyé lors de l'étape 1
+@token = 2|rClYYaazVjKdG57Vm3KrcNaFKe9VMBi5nsOepvZp8490eee8
+
+### --------------------------------------------------------
+### 1. AUTHENTIFICATION
+### --------------------------------------------------------
+
+# Login Admin (pour récupérer le Token)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+    "email": "admin@example.com",
+    "password": "password"
+}
+
+###
+
+# Voir son propre profil (Nécessite de remplacer @token ci-dessus par le vrai token)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### --------------------------------------------------------
+### 2. GESTION DES UTILISATEURS (CRUD)
+### --------------------------------------------------------
+
+# Lister les utilisateurs
+GET {{baseUrl}}/users
+Authorization: Bearer {{token}}
+Accept: application/json
+
+###
+
+# Créer un nouvel utilisateur (Opérateur)
+POST {{baseUrl}}/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "name": "Nouvel Opérateur",
+    "email": "nouveau.op@example.com",
+    "password": "password",
+    "password_confirmation": "password",
+    "role": "operator"
+}
+
+### --------------------------------------------------------
+### 3. CATALOGUE PUBLIC (Catégories & Produits)
+### --------------------------------------------------------
+
+# Lister toutes les catégories (Public)
+GET {{baseUrl}}/categories
+Accept: application/json
+
+###
+
+# Lister tous les produits (Public)
+GET {{baseUrl}}/products
+Accept: application/json
+
+### --------------------------------------------------------
+### 4. GESTION DES PRODUITS ET CATEGORIES (ProtéGÉ)
+### --------------------------------------------------------
+
+# Créer une nouvelle catégorie
+POST {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "name": "Tubercules",
+    "parent_id": 1
+}
+
+###
+
+# Ajouter un nouveau produit
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "name": "Ignames",
+    "description": "Ignames fraîches de la ferme.",
+    "price_fcfa": 2500,
+    "category_id": 1
+}
+
+### --------------------------------------------------------
+### 5. AGRICULTEURS (ProtéGÉ)
+### --------------------------------------------------------
+
+# Lister les agriculteurs
+GET {{baseUrl}}/farmers
+Authorization: Bearer {{token}}
+Accept: application/json
+
+###
+
+# Ajouter un agriculteur
+POST {{baseUrl}}/farmers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+    "identifier": "FARM-003",
+    "firstname": "Paul",
+    "lastname": "Bocuse",
+    "phone": "+33600000003",
+    "credit_limit_fcfa": 75000,
+    "operator_id": 2
+}

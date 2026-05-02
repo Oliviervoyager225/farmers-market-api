@@ -1,0 +1,58 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: farmers-market-app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      APP_NAME: "Farmers Market"
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_KEY: base64:oCEHkJt9qcPlwQ4X4JKU/fNTigQccJpRHrA9CUoDMMg=
+      APP_URL: http://localhost:8000
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: farmers_market
+      DB_USERNAME: laravel
+      DB_PASSWORD: secret
+      SESSION_DRIVER: database
+      CACHE_STORE: database
+      LOG_CHANNEL: stderr
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - farmers-network
+    volumes:
+      - ./storage:/var/www/html/storage
+
+  db:
+    image: postgres:16-alpine
+    container_name: farmers-market-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: farmers_market
+      POSTGRES_USER: laravel
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U laravel -d farmers_market"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - farmers-network
+
+networks:
+  farmers-network:
+    driver: bridge
+
+volumes:
+  pg_data:

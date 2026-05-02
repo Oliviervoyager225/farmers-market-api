@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password');
-            $table->enum('role', ['admin', 'supervisor', 'operator']);
+            $table->enum('role', ['admin', 'supervisor', 'operator'])->default('admin');
             $table->unsignedBigInteger('supervisor_id')->nullable();
             $table->rememberToken();
             $table->timestamps();

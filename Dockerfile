@@ -1,6 +1,6 @@
-FROM php:8.4-cli
+FROM php:8.3-cli
 
-# Install system dependencies
+# System dependencies
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     libzip-dev \
@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PHP extensions
+# PHP extensions
 RUN docker-php-ext-install \
     pdo \
     pdo_pgsql \
@@ -22,26 +22,27 @@ RUN docker-php-ext-install \
     bcmath \
     opcache
 
-# Install Composer
+# Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Copy composer files first for layer caching
+# Install dependencies (layer cache)
 COPY composer.json composer.lock ./
-
-# Install dependencies (no dev)
 RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
 
-# Copy application code
+# Copy source
 COPY . .
 
-# Run post-install scripts
+# Post-install scripts
 RUN composer run-script post-autoload-dump || true
 
-# Fix permissions
+# Storage permissions
 RUN chmod -R 775 storage bootstrap/cache
+
+# Startup script
+RUN chmod +x start.sh
 
 EXPOSE 8000
 
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+CMD ["./start.sh"]

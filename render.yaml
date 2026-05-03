@@ -1,0 +1,61 @@
+services:
+  - type: web
+    name: farmbridge-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /up
+    envVars:
+      - key: APP_NAME
+        value: FarmBridge
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_KEY
+        generateValue: true
+      - key: APP_URL
+        fromService:
+          type: web
+          name: farmbridge-api
+          property: hostport
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase:
+          name: farmbridge-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: farmbridge-db
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: farmbridge-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: farmbridge-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: farmbridge-db
+          property: password
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: error
+      - key: SANCTUM_STATEFUL_DOMAINS
+        value: "*"
+      - key: SESSION_DRIVER
+        value: cookie
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: sync
+
+databases:
+  - name: farmbridge-db
+    plan: free
+    databaseName: farmbridge
+    user: farmbridge

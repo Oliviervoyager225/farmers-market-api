@@ -17,11 +17,9 @@ final class DebtController extends Controller
 
     public function byFarmer(Request $request, int $farmer): JsonResponse
     {
-        $perPage = (int) $request->query('per_page', 15);
-
-        return response()->json(
-            $this->debtService->paginateByFarmer($farmer, $perPage),
-        );
+        return response()->json([
+            'data' => $this->debtService->summaryByFarmer($farmer),
+        ]);
     }
 
     public function show(int $debt): JsonResponse

@@ -36,28 +36,35 @@ class ProductResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            TextInput::make('name')
-                ->label('Nom')
-                ->required()
-                ->maxLength(150)
-                ->unique(ignoreRecord: true),
+            Select::make('category_id')
+                ->label('Catégorie')
+                ->options(
+                    Category::with('parent')
+                        ->get()
+                        ->mapWithKeys(fn (Category $c) => [
+                            $c->id => ($c->parent ? "{$c->parent->icon} {$c->parent->name} › " : '')
+                                      . "{$c->icon} {$c->name}",
+                        ])
+                )
+                ->searchable()
+                ->required(),
 
-            Textarea::make('description')
-                ->label('Description')
-                ->rows(3)
-                ->nullable(),
+            TextInput::make('name')
+                ->label('Nom du produit')
+                ->required()
+                ->maxLength(150),
 
             TextInput::make('price_fcfa')
                 ->label('Prix (FCFA)')
                 ->numeric()
                 ->required()
-                ->minValue(0),
+                ->minValue(0)
+                ->suffix('FCFA'),
 
-            Select::make('category_id')
-                ->label('Catégorie')
-                ->options(Category::pluck('name', 'id'))
-                ->searchable()
-                ->required(),
+            Textarea::make('description')
+                ->label('Description')
+                ->rows(3)
+                ->nullable(),
         ]);
     }
 
@@ -65,19 +72,30 @@ class ProductResource extends Resource
     {
         return $table
             ->columns([
+                TextColumn::make('category.icon')
+                    ->label('')
+                    ->width('40px'),
+
                 TextColumn::make('name')
-                    ->label('Nom')
+                    ->label('Produit')
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('category.name')
                     ->label('Catégorie')
+                    ->badge()
                     ->sortable(),
 
                 TextColumn::make('price_fcfa')
                     ->label('Prix (FCFA)')
                     ->numeric(thousandsSeparator: ' ')
+                    ->suffix(' FCFA')
                     ->sortable(),
+
+                TextColumn::make('description')
+                    ->label('Description')
+                    ->limit(50)
+                    ->toggleable(),
 
                 TextColumn::make('created_at')
                     ->label('Créé le')

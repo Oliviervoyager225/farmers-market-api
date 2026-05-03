@@ -18,4 +18,37 @@ class EditFarmer extends EditRecord
             DeleteAction::make(),
         ];
     }
+
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $specialties = $data['specialties'] ?? [];
+        if (is_string($specialties)) {
+            $specialties = json_decode($specialties, true) ?? [];
+        }
+
+        $vegList = ['Agriculteur', 'Maraîcher', 'Arboriculteur', 'Riziculteur', 'Cacaoculteur', 'Caféiculteur', 'Horticulteur', 'Pépiniériste'];
+        $aniList = ['Éleveur', 'Aviculteur', 'Boviniculteur', 'Porciniculteur', 'Pisciculteur', 'Apiculteur'];
+
+        $data['specialties_veg'] = array_intersect($specialties, $vegList);
+        $data['specialties_ani'] = array_intersect($specialties, $aniList);
+
+        return $data;
+    }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $specialties = [];
+        if (isset($data['specialties_veg']) && is_array($data['specialties_veg'])) {
+            $specialties = array_merge($specialties, $data['specialties_veg']);
+        }
+        if (isset($data['specialties_ani']) && is_array($data['specialties_ani'])) {
+            $specialties = array_merge($specialties, $data['specialties_ani']);
+        }
+        $data['specialties'] = $specialties;
+
+        unset($data['specialties_veg']);
+        unset($data['specialties_ani']);
+
+        return $data;
+    }
 }

@@ -10,7 +10,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 interface FarmerRepositoryInterface
 {
-    public function paginate(int $perPage = 15, ?string $search = null): LengthAwarePaginator;
+    public function paginate(int $perPage = 15, ?string $search = null, ?int $operatorId = null): LengthAwarePaginator;
 
     public function findById(int $id): ?Farmer;
 

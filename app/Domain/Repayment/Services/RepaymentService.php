@@ -24,6 +24,11 @@ final class RepaymentService
         return $this->repaymentRepository->paginate($perPage, $farmerId);
     }
 
+    public function paginateByFarmer(int $farmerId, int $perPage = 15): LengthAwarePaginator
+    {
+        return $this->repaymentRepository->paginate($perPage, $farmerId);
+    }
+
     public function findOrFail(int $id): Repayment
     {
         $repayment = $this->repaymentRepository->findById($id);
@@ -41,6 +46,7 @@ final class RepaymentService
             $repayment = $this->repaymentRepository->create([
                 'farmer_id'           => $dto->farmerId,
                 'operator_id'         => $dto->operatorId,
+                'commodity'           => $dto->commodity,
                 'kg_received'         => $dto->kgReceived,
                 'commodity_rate_fcfa' => $dto->commodityRateFcfa,
                 'total_fcfa_credited' => $totalCredited,

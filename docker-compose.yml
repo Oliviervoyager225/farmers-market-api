@@ -28,6 +28,8 @@ services:
     networks:
       - farmers-network
     volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
       - ./storage:/var/www/html/storage
 
   db:

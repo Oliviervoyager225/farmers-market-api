@@ -14,6 +14,7 @@ class Repayment extends Model
     protected $fillable = [
         'farmer_id',
         'operator_id',
+        'commodity',
         'kg_received',
         'commodity_rate_fcfa',
         'total_fcfa_credited',

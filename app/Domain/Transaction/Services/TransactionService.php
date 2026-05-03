@@ -44,7 +44,8 @@ final class TransactionService
             if ($dto->paymentMethod === PaymentMethod::Credit) {
                 abort_if($dto->interestRate === null, 422, 'Le taux d\'intérêt est requis pour un paiement à crédit.');
 
-                $interestAmount = round($subtotal * ($dto->interestRate / 100), 2);
+                // interestRate is a decimal (0.30 = 30%)
+                $interestAmount = round($subtotal * $dto->interestRate, 2);
                 $total          = round($subtotal + $interestAmount, 2);
 
                 // Vérification de la limite de crédit

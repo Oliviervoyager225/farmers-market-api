@@ -15,12 +15,27 @@ class Farmer extends Model
         'firstname',
         'lastname',
         'phone',
+        'email',
+        'state',
+        'city',
+        'address',
+        'bio',
+        'farm_size',
+        'experience',
+        'categories',
+        'specialties',
+        'certification',
+        'primary_market',
         'credit_limit_fcfa',
         'operator_id',
     ];
 
     protected $casts = [
         'credit_limit_fcfa' => 'float',
+        'farm_size' => 'float',
+        'experience' => 'integer',
+        'categories' => 'array',
+        'specialties' => 'array',
     ];
 
     public function operator(): BelongsTo

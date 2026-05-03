@@ -7,6 +7,7 @@ use App\Domain\Auth\Controllers\UserController;
 use App\Domain\Category\Controllers\CategoryController;
 use App\Domain\Debt\Controllers\DebtController;
 use App\Domain\Farmer\Controllers\FarmerController;
+use App\Domain\Notification\Controllers\NotificationController;
 use App\Domain\Product\Controllers\ProductController;
 use App\Domain\Repayment\Controllers\RepaymentController;
 use App\Domain\Setting\Controllers\SettingController;
@@ -36,17 +37,15 @@ Route::prefix('v1')->group(function () {
 
         // ── Admin & Supervisor ─────────────────────────────────────────────────
 
-        // Gestion des comptes utilisateurs (admin crée superviseurs, supervisor crée operators)
         Route::middleware('role:admin,supervisor')->group(function () {
+            // Gestion des comptes utilisateurs
             Route::get('users',           [UserController::class, 'index']);
             Route::get('users/{user}',    [UserController::class, 'show']);
             Route::post('users',          [UserController::class, 'store']);
             Route::put('users/{user}',    [UserController::class, 'update']);
             Route::delete('users/{user}', [UserController::class, 'destroy']);
-        });
 
-        // Gestion catalogue produits & catégories
-        Route::middleware('role:admin,supervisor')->group(function () {
+            // Gestion catalogue produits & catégories
             Route::post('products',              [ProductController::class, 'store']);
             Route::put('products/{product}',     [ProductController::class, 'update']);
             Route::delete('products/{product}',  [ProductController::class, 'destroy']);
@@ -59,12 +58,14 @@ Route::prefix('v1')->group(function () {
         // ── Admin uniquement ───────────────────────────────────────────────────
 
         Route::middleware('role:admin')->group(function () {
-            Route::get('settings',       [SettingController::class, 'index']);
+            Route::put('settings',       [SettingController::class, 'bulkUpdate']);
             Route::put('settings/{key}', [SettingController::class, 'update']);
         });
 
         // ── Tous les rôles authentifiés ────────────────────────────────────────
-        // (admin, supervisor, operator — chaque contrôleur filtre selon le rôle)
+
+        // Paramètres (lecture — opérateurs ont besoin du taux kg et du taux d'intérêt)
+        Route::get('settings', [SettingController::class, 'index']);
 
         // Agriculteurs
         Route::get('farmers',             [FarmerController::class, 'index']);
@@ -73,9 +74,10 @@ Route::prefix('v1')->group(function () {
         Route::put('farmers/{farmer}',    [FarmerController::class, 'update']);
         Route::delete('farmers/{farmer}', [FarmerController::class, 'destroy']);
 
-        // Dettes
-        Route::get('farmers/{farmer}/debts', [DebtController::class, 'byFarmer']);
-        Route::get('debts/{debt}',           [DebtController::class, 'show']);
+        // Dettes — résumé par agriculteur
+        Route::get('farmers/{farmer}/debts',       [DebtController::class, 'byFarmer']);
+        Route::get('farmers/{farmer}/repayments',  [RepaymentController::class, 'byFarmer']);
+        Route::get('debts/{debt}',                 [DebtController::class, 'show']);
 
         // Transactions (ventes cash / crédit)
         Route::get('transactions',               [TransactionController::class, 'index']);
@@ -86,5 +88,12 @@ Route::prefix('v1')->group(function () {
         Route::get('repayments',             [RepaymentController::class, 'index']);
         Route::get('repayments/{repayment}', [RepaymentController::class, 'show']);
         Route::post('repayments',            [RepaymentController::class, 'store']);
+
+        // Notifications (alertes dettes)
+        Route::get('notifications',               [NotificationController::class, 'index']);
+        Route::get('notifications/unread-count',  [NotificationController::class, 'unreadCount']);
+        Route::put('notifications/read-all',      [NotificationController::class, 'markAllAsRead']);
+        Route::put('notifications/{key}/read',    [NotificationController::class, 'markAsRead'])
+            ->where('key', '.*');
     });
 });

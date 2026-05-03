@@ -1,7 +1,7 @@
 ### Variables (à adapter selon les résultats)
 @baseUrl = http://localhost:8000/api/v1
 # Remplacez <VOTRE_TOKEN_ICI> par le token renvoyé lors de l'étape 1
-@token = 2|rClYYaazVjKdG57Vm3KrcNaFKe9VMBi5nsOepvZp8490eee8
+@token = 1|JsxhZlzO7hiIgz4K8QeOmY8rSrORNDvbi6Rz2uhmbdfb8aca
 
 ### --------------------------------------------------------
 ### 1. AUTHENTIFICATION

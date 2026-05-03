@@ -6,7 +6,7 @@ namespace App\Domain\Debt\Services;
 
 use App\Domain\Debt\Repositories\DebtRepositoryInterface;
 use App\Models\Debt;
-use Illuminate\Pagination\LengthAwarePaginator;
+use App\Models\Farmer;
 
 final class DebtService
 {
@@ -14,9 +14,34 @@ final class DebtService
         private readonly DebtRepositoryInterface $debtRepository,
     ) {}
 
-    public function paginateByFarmer(int $farmerId, int $perPage = 15): LengthAwarePaginator
+    public function summaryByFarmer(int $farmerId): array
     {
-        return $this->debtRepository->paginateByFarmer($farmerId, $perPage);
+        $farmer = Farmer::with(['debts' => fn ($q) => $q->with('transaction')])->findOrFail($farmerId);
+        $debts  = $farmer->debts;
+
+        $totalDebt = (float) $debts->sum('original_amount_fcfa');
+        $totalPaid = (float) $debts->sum(fn (Debt $d) => $d->original_amount_fcfa - $d->remaining_amount_fcfa);
+        $remaining = (float) $debts->whereIn('status', ['open', 'partial'])->sum('remaining_amount_fcfa');
+
+        $openDebts = $debts
+            ->whereIn('status', ['open', 'partial'])
+            ->sortBy('created_at')
+            ->values()
+            ->map(fn (Debt $d) => [
+                'transaction_id' => $d->transaction_id,
+                'amount'         => $d->original_amount_fcfa,
+                'paid'           => round($d->original_amount_fcfa - $d->remaining_amount_fcfa, 2),
+                'balance'        => $d->remaining_amount_fcfa,
+                'date'           => $d->created_at?->toISOString(),
+            ])
+            ->all();
+
+        return [
+            'total_debt' => $totalDebt,
+            'total_paid' => $totalPaid,
+            'remaining'  => $remaining,
+            'open_debts' => $openDebts,
+        ];
     }
 
     public function findOrFail(int $id): Debt

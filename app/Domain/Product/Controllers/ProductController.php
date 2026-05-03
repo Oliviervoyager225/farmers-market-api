@@ -11,7 +11,6 @@ use App\Domain\Product\Requests\FilterProductRequest;
 use App\Domain\Product\Requests\StoreProductRequest;
 use App\Domain\Product\Requests\UpdateProductRequest;
 use App\Domain\Product\Services\ProductService;
-use App\Domain\Vendor\Repositories\VendorRepositoryInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -19,7 +18,6 @@ final class ProductController extends Controller
 {
     public function __construct(
         private readonly ProductService $productService,
-        private readonly VendorRepositoryInterface $vendorRepository,
     ) {}
 
     public function index(FilterProductRequest $request): JsonResponse
@@ -40,13 +38,7 @@ final class ProductController extends Controller
 
     public function store(StoreProductRequest $request): JsonResponse
     {
-        $vendor = $this->vendorRepository->findByUserId($request->user()->id);
-
-        abort_if($vendor === null, 403, 'You must have a vendor profile to create products.');
-
-        $data = array_merge($request->validated(), ['vendor_id' => $vendor->id]);
-
-        $product = $this->productService->create(ProductDTO::fromArray($data));
+        $product = $this->productService->create(ProductDTO::fromArray($request->validated()));
 
         return response()->json([
             'message' => 'Product created successfully.',
@@ -56,13 +48,7 @@ final class ProductController extends Controller
 
     public function update(UpdateProductRequest $request, int $product): JsonResponse
     {
-        $vendor = $this->vendorRepository->findByUserId($request->user()->id);
-
-        abort_if($vendor === null, 403, 'You must have a vendor profile to update products.');
-
-        $data = array_merge($request->validated(), ['vendor_id' => $vendor->id]);
-
-        $updated = $this->productService->update($product, ProductDTO::fromArray($data));
+        $updated = $this->productService->update($product, ProductDTO::fromArray($request->validated()));
 
         return response()->json([
             'message' => 'Product updated successfully.',
@@ -79,12 +65,4 @@ final class ProductController extends Controller
         ]);
     }
 
-    public function byVendor(Request $request, int $vendor): JsonResponse
-    {
-        $perPage = (int) $request->query('per_page', 15);
-
-        return response()->json(
-            $this->productService->getByVendor($vendor, $perPage),
-        );
-    }
 }

@@ -27,16 +27,20 @@ final class CategoryRepository implements CategoryRepositoryInterface
     public function create(CategoryDTO $dto): Category
     {
         return Category::query()->create([
-            'name'      => $dto->name,
-            'parent_id' => $dto->parentId,
+            'name'        => $dto->name,
+            'icon'        => $dto->icon,
+            'description' => $dto->description,
+            'parent_id'   => $dto->parentId,
         ]);
     }
 
     public function update(Category $category, CategoryDTO $dto): Category
     {
         $category->update([
-            'name'      => $dto->name,
-            'parent_id' => $dto->parentId,
+            'name'        => $dto->name,
+            'icon'        => $dto->icon,
+            'description' => $dto->description,
+            'parent_id'   => $dto->parentId,
         ]);
 
         return $category->fresh(['parent', 'children']);

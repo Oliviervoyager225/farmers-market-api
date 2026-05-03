@@ -10,10 +10,11 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 final class FarmerRepository implements FarmerRepositoryInterface
 {
-    public function paginate(int $perPage = 15, ?string $search = null): LengthAwarePaginator
+    public function paginate(int $perPage = 15, ?string $search = null, ?int $operatorId = null): LengthAwarePaginator
     {
         return Farmer::query()
             ->with('operator')
+            ->when($operatorId, fn ($q) => $q->where('operator_id', $operatorId))
             ->when($search, function ($query, $search) {
                 $query->where('firstname', 'like', "%{$search}%")
                       ->orWhere('lastname', 'like', "%{$search}%")
@@ -41,6 +42,17 @@ final class FarmerRepository implements FarmerRepositoryInterface
             'firstname'        => $dto->firstname,
             'lastname'         => $dto->lastname,
             'phone'            => $dto->phone,
+            'email'            => $dto->email,
+            'state'            => $dto->state,
+            'city'             => $dto->city,
+            'address'          => $dto->address,
+            'bio'              => $dto->bio,
+            'farm_size'        => $dto->farmSize,
+            'experience'       => $dto->experience,
+            'categories'       => $dto->categories,
+            'specialties'      => $dto->specialties,
+            'certification'    => $dto->certification,
+            'primary_market'   => $dto->primaryMarket,
             'credit_limit_fcfa' => $dto->creditLimitFcfa,
             'operator_id'      => $dto->operatorId,
         ]);
@@ -52,6 +64,17 @@ final class FarmerRepository implements FarmerRepositoryInterface
             'firstname'        => $dto->firstname,
             'lastname'         => $dto->lastname,
             'phone'            => $dto->phone,
+            'email'            => $dto->email,
+            'state'            => $dto->state,
+            'city'             => $dto->city,
+            'address'          => $dto->address,
+            'bio'              => $dto->bio,
+            'farm_size'        => $dto->farmSize,
+            'experience'       => $dto->experience,
+            'categories'       => $dto->categories,
+            'specialties'      => $dto->specialties,
+            'certification'    => $dto->certification,
+            'primary_market'   => $dto->primaryMarket,
             'credit_limit_fcfa' => $dto->creditLimitFcfa,
         ]);
 

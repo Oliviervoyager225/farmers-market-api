@@ -15,9 +15,9 @@ final class FarmerService
         private readonly FarmerRepositoryInterface $farmerRepository,
     ) {}
 
-    public function paginate(int $perPage = 15, ?string $search = null): LengthAwarePaginator
+    public function paginate(int $perPage = 15, ?string $search = null, ?int $operatorId = null): LengthAwarePaginator
     {
-        return $this->farmerRepository->paginate($perPage, $search);
+        return $this->farmerRepository->paginate($perPage, $search, $operatorId);
     }
 
     public function findOrFail(int $id): Farmer

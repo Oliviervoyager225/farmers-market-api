@@ -7,10 +7,11 @@ namespace App\Domain\Repayment\DTOs;
 final readonly class CreateRepaymentDTO
 {
     public function __construct(
-        public int   $farmerId,
-        public int   $operatorId,
-        public float $kgReceived,
-        public float $commodityRateFcfa,
+        public int    $farmerId,
+        public int    $operatorId,
+        public string $commodity,
+        public float  $kgReceived,
+        public float  $commodityRateFcfa,
     ) {}
 
     public function totalCredited(): float
@@ -23,6 +24,7 @@ final readonly class CreateRepaymentDTO
         return new self(
             farmerId:          (int) $data['farmer_id'],
             operatorId:        (int) $data['operator_id'],
+            commodity:         (string) ($data['commodity'] ?? 'Récolte'),
             kgReceived:        (float) $data['kg_received'],
             commodityRateFcfa: (float) $data['commodity_rate_fcfa'],
         );

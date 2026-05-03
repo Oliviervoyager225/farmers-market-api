@@ -15,7 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->statefulApi();
+        $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);
+        // NE PAS appeler statefulApi() : Flutter utilise Bearer token, pas les cookies Sanctum
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,
         ]);

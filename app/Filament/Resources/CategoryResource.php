@@ -15,7 +15,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 class CategoryResource extends Resource
@@ -32,34 +31,71 @@ class CategoryResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
+    private static array $iconOptions = [
+        '🌱' => '🌱   Plante / Croissance',
+        '🌾' => '🌾   Céréales',
+        '🌿' => '🌿   Herbes',
+        '🍀' => '🍀   Légumineuses',
+        '🌻' => '🌻   Tournesol',
+        '🫘' => '🫘   Légumes secs',
+        '🌽' => '🌽   Maïs',
+        '🍅' => '🍅   Maraîchage',
+        '🥬' => '🥬   Légumes feuilles',
+        '🥑' => '🥑   Fruits tropicaux',
+        '🍫' => '🍫   Cacao',
+        '☕' => '☕   Café',
+        '🌴' => '🌴   Palmier',
+        '🎋' => '🎋   Bambou / Autres',
+        '🧪' => '🧪   Chimie / Synthèse',
+        '🛡️' => '🛡️   Protection cultures',
+        '🐛' => '🐛   Insecticides',
+        '🍄' => '🍄   Fongicides',
+        '🪨' => '🪨   Amendements sol',
+        '⚗️' => '⚗️   Biostimulants',
+        '💧' => '💧   Irrigation',
+        '♻️' => '♻️   Bio / Organique',
+        '🌡️' => '🌡️   Météo / Climat',
+        '🐄' => '🐄   Élevage bovin',
+        '🐓' => '🐓   Volaille',
+        '🐟' => '🐟   Aquaculture',
+        '🔬' => '🔬   Analyses / Tests',
+        '🚜' => '🚜   Matériel agricole',
+        '📦' => '📦   Emballage',
+        '⭐' => '⭐   Spécial / Premium',
+    ];
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            TextInput::make('icon')
-                ->label('Icône (emoji)')
-                ->placeholder('🌱')
-                ->maxLength(20)
-                ->nullable()
-                ->helperText('Collez un emoji qui représente la catégorie.'),
-
-            TextInput::make('name')
-                ->label('Nom')
-                ->required()
-                ->maxLength(100)
-                ->unique(ignoreRecord: true),
-
-            Select::make('parent_id')
-                ->label('Catégorie parente')
-                ->options(Category::whereNull('parent_id')->pluck('name', 'id'))
+            Select::make('icon')
+                ->label('Icône')
+                ->options(self::$iconOptions)
                 ->searchable()
                 ->nullable()
-                ->placeholder('Aucune (catégorie racine)'),
+                ->placeholder('Choisir une icône…')
+                ->columnSpan(1),
+
+            Select::make('name')
+                ->label('Nom')
+                ->options(fn () => Category::orderBy('name')->pluck('name', 'name'))
+                ->searchable()
+                ->required()
+                ->placeholder('Choisir ou créer un nom…')
+                ->createOptionForm([
+                    TextInput::make('name')
+                        ->label('Nouveau nom de catégorie')
+                        ->required()
+                        ->maxLength(100),
+                ])
+                ->createOptionUsing(fn (array $data): string => $data['name'])
+                ->columnSpan(1),
 
             Textarea::make('description')
                 ->label('Description')
                 ->rows(2)
                 ->nullable()
-                ->maxLength(500),
+                ->maxLength(500)
+                ->columnSpanFull(),
         ]);
     }
 
@@ -69,24 +105,26 @@ class CategoryResource extends Resource
             ->columns([
                 TextColumn::make('icon')
                     ->label('')
-                    ->width('40px'),
+                    ->width('48px'),
 
                 TextColumn::make('name')
                     ->label('Nom')
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('parent.name')
-                    ->label('Parente')
-                    ->badge()
-                    ->default('—')
-                    ->sortable(),
-
                 TextColumn::make('products_count')
                     ->label('Produits')
-                    ->counts('products')
+                    ->getStateUsing(function (Category $record): int {
+                        $direct = $record->products()->count();
+                        $fromChildren = $record->children()
+                            ->withCount('products')
+                            ->get()
+                            ->sum('products_count');
+
+                        return $direct + $fromChildren;
+                    })
                     ->badge()
-                    ->sortable(),
+                    ->color('success'),
 
                 TextColumn::make('description')
                     ->label('Description')
@@ -98,12 +136,6 @@ class CategoryResource extends Resource
                     ->dateTime('d/m/Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->filters([
-                SelectFilter::make('parent_id')
-                    ->label('Type')
-                    ->options([null => 'Racines seulement'])
-                    ->placeholder('Toutes les catégories'),
             ])
             ->actions([
                 EditAction::make(),

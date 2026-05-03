@@ -15,10 +15,7 @@ services:
       - key: APP_KEY
         value: base64:DPjdFVL3MVfa2VgBCtAJ2jGXz+WxDPAVn7ndHc8StHM=
       - key: APP_URL
-        fromService:
-          type: web
-          name: farmbridge-api
-          property: hostport
+        value: https://farmbridge-api-d2up.onrender.com
       - key: DB_CONNECTION
         value: pgsql
       - key: DB_HOST

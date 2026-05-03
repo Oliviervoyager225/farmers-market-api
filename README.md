@@ -1,58 +1,249 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# FarmBridge API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+API REST backend de la plateforme **FarmBridge POS** — gestion des achats de produits agricoles, du crédit agriculteur, des dettes et des remboursements en Côte d'Ivoire.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Stack technique
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+| Couche | Technologie |
+|---|---|
+| Framework | Laravel 13 (PHP 8.3) |
+| Base de données | PostgreSQL 16 |
+| Authentification | Laravel Sanctum (tokens) |
+| Administration | Filament 5 |
+| Architecture | DDD (Domain-Driven Design) |
+| Conteneurisation | Docker / Docker Compose |
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Domaines métier
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```
+app/Domain/
+├── Auth/           # Connexion, gestion des tokens Sanctum
+├── Farmer/         # Agriculteurs, profils, spécialités, limite de crédit
+├── Product/        # Catalogue de produits agricoles
+├── Category/       # Catégories de produits
+├── Transaction/    # Achats POS (espèces ou crédit)
+├── Debt/           # Dettes issues des achats à crédit
+├── Repayment/      # Remboursements en nature (récoltes)
+├── Notification/   # Notifications in-app
+└── Setting/        # Configuration (taux d'intérêt, limites, etc.)
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+---
 
-## Contributing
+## Fonctionnalités principales
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- **Gestion des agriculteurs** — création, profil complet, spécialités, catégories de production, limite de crédit configurable par agriculteur
+- **Catalogue produits** — produits agricoles avec catégories, prix unitaires en FCFA
+- **Caisse POS** — enregistrement d'achats multi-produits, paiement espèces ou crédit avec taux d'intérêt
+- **Limite de crédit** — blocage automatique si la nouvelle dette dépasse le plafond autorisé
+- **Suivi des dettes** — encours par agriculteur, statuts `open / partial / paid`
+- **Remboursements en nature** — produit + kg + taux/kg → montant crédité calculé et imputé automatiquement sur la dette
+- **Audit trail** — chaque transaction et remboursement est lié à l'opérateur (nom + rôle)
+- **RBAC** — 3 rôles : `admin`, `supervisor`, `operator`
+- **Administration Filament** — interface d'administration web intégrée
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Rôles et permissions
 
-## Security Vulnerabilities
+| Action | admin | supervisor | operator |
+|---|:---:|:---:|:---:|
+| Créer un agriculteur | ✅ | ❌ | ❌ |
+| Voir tous les agriculteurs | ✅ | ✅ | ✅ |
+| Passer une commande POS | ✅ | ✅ | ✅ |
+| Enregistrer un remboursement | ✅ | ✅ | ✅ |
+| Accès administration Filament | ✅ | ✅ | ❌ |
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
-## License
+## Installation
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Prérequis
+
+- PHP 8.3+
+- Composer
+- PostgreSQL 16
+- Docker (optionnel)
+
+### Avec Docker
+
+```bash
+git clone <repo-url>
+cd farmers-market-api
+
+cp .env.example .env
+# Configurer DB_HOST, DB_DATABASE, DB_USERNAME, DB_PASSWORD dans .env
+
+docker-compose up -d
+docker-compose exec app composer install
+docker-compose exec app php artisan key:generate
+docker-compose exec app php artisan migrate --seed
+```
+
+### Sans Docker
+
+```bash
+git clone <repo-url>
+cd farmers-market-api
+
+composer install
+cp .env.example .env
+php artisan key:generate
+
+# Configurer .env avec vos identifiants PostgreSQL
+php artisan migrate --seed
+php artisan serve
+```
+
+---
+
+## Variables d'environnement clés
+
+```env
+APP_NAME=FarmBridge
+APP_ENV=production
+APP_URL=https://votre-domaine.com
+
+DB_CONNECTION=pgsql
+DB_HOST=localhost
+DB_PORT=5432
+DB_DATABASE=farmbridge
+DB_USERNAME=postgres
+DB_PASSWORD=secret
+
+SANCTUM_STATEFUL_DOMAINS=localhost,votre-domaine.com
+FRONTEND_URL=http://localhost
+```
+
+---
+
+## Endpoints API principaux
+
+Tous les endpoints (sauf `/api/auth/login`) nécessitent :
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+### Authentification
+```
+POST   /api/auth/login              Connexion (retourne token)
+POST   /api/auth/logout             Déconnexion
+GET    /api/auth/me                 Profil utilisateur connecté
+```
+
+### Agriculteurs
+```
+GET    /api/farmers                 Liste paginée (search, per_page)
+POST   /api/farmers                 Créer un agriculteur
+GET    /api/farmers/{id}            Détail agriculteur
+PUT    /api/farmers/{id}            Modifier agriculteur
+DELETE /api/farmers/{id}            Supprimer agriculteur
+GET    /api/farmers/{id}/debts      Dettes d'un agriculteur
+GET    /api/farmers/{id}/repayments Remboursements d'un agriculteur
+```
+
+### Produits & Catégories
+```
+GET    /api/products                Catalogue produits
+GET    /api/categories              Liste des catégories
+```
+
+### Transactions (achats POS)
+```
+GET    /api/transactions            Toutes les transactions (per_page, farmer_id)
+POST   /api/transactions            Enregistrer un achat
+GET    /api/transactions/{id}       Détail d'une transaction
+```
+
+### Remboursements
+```
+GET    /api/repayments              Tous les remboursements (per_page, farmer_id)
+POST   /api/repayments              Enregistrer un remboursement
+GET    /api/repayments/{id}         Détail d'un remboursement
+```
+
+### Configuration
+```
+GET    /api/settings                Paramètres (taux d'intérêt, limites)
+PUT    /api/settings                Mettre à jour les paramètres
+```
+
+---
+
+## Exemple de payload — Créer un achat
+
+```json
+POST /api/transactions
+{
+  "farmer_id": 3,
+  "payment_method": "credit",
+  "interest_rate": 0.05,
+  "items": [
+    { "product_id": 1, "quantity": 2 },
+    { "product_id": 4, "quantity": 5 }
+  ]
+}
+```
+
+## Exemple de payload — Enregistrer un remboursement
+
+```json
+POST /api/repayments
+{
+  "farmer_id": 3,
+  "commodity": "Cacao",
+  "kg_received": 25.5,
+  "rate_per_kg": 1000
+}
+```
+
+---
+
+## Structure du projet
+
+```
+app/
+├── Domain/            # Logique métier par domaine (DDD)
+│   └── {Domain}/
+│       ├── Controllers/
+│       ├── Services/
+│       ├── Repositories/
+│       ├── DTOs/
+│       └── Requests/
+├── Filament/          # Interface d'administration Filament
+├── Http/Resources/    # Transformateurs de réponse API (JSON)
+├── Models/            # Modèles Eloquent
+database/
+├── migrations/        # Migrations PostgreSQL
+└── seeders/           # Données initiales (users, produits)
+routes/
+└── api.php            # Définition de toutes les routes API
+```
+
+---
+
+## Administration
+
+Interface Filament accessible à `/admin` pour les rôles `admin` et `supervisor`.
+Permet la gestion complète des données sans passer par l'application mobile/web.
+
+---
+
+## Déploiement
+
+Le projet inclut un `Procfile` pour déploiement sur Railway, Render ou Heroku :
+
+```
+web: php artisan serve --host=0.0.0.0 --port=$PORT
+```
+
+---
+
+## Licence
+
+Projet privé — FarmBridge © 2026

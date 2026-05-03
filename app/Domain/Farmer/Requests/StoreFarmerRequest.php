@@ -25,7 +25,7 @@ final class StoreFarmerRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'identifier'        => ['required', 'string', 'max:50', 'unique:farmers,identifier'],
+            'identifier'        => ['nullable', 'string', 'max:50', 'unique:farmers,identifier'],
             'firstname'         => ['required', 'string', 'max:100'],
             'lastname'          => ['required', 'string', 'max:100'],
             'phone'             => ['nullable', 'string', 'max:20'],

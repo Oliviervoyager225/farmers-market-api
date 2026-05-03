@@ -10,6 +10,7 @@ use App\Domain\Farmer\DTOs\FarmerDTO;
 use App\Domain\Farmer\Requests\StoreFarmerRequest;
 use App\Domain\Farmer\Requests\UpdateFarmerRequest;
 use App\Domain\Farmer\Services\FarmerService;
+use App\Models\Farmer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -39,7 +40,12 @@ final class FarmerController extends Controller
 
     public function store(StoreFarmerRequest $request): JsonResponse
     {
-        $data   = array_merge($request->validated(), ['operator_id' => $request->user()->id]);
+        $data = array_merge($request->validated(), ['operator_id' => $request->user()->id]);
+
+        if (empty($data['identifier'])) {
+            $data['identifier'] = Farmer::generateNextIdentifier();
+        }
+
         $farmer = $this->farmerService->create(FarmerDTO::fromArray($data));
 
         return response()->json([

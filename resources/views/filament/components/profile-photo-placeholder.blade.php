@@ -17,7 +17,7 @@
         FB
     </div>
 
-    {{-- Upload button --}}
+    {{-- Upload button + hint --}}
     <div>
         <button type="button"
             style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;

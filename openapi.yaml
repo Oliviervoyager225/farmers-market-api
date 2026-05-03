@@ -1,0 +1,1559 @@
+openapi: 3.0.3
+
+info:
+  title: Farmers Market API
+  description: |
+    API REST complète de la plateforme **Farmers Market** (FarmBridge).
+
+    ## Authentification
+    Toutes les routes protégées utilisent **Laravel Sanctum** (Bearer Token).
+    1. Appelez `POST /api/v1/auth/login` pour obtenir votre token.
+    2. Ajoutez le header `Authorization: Bearer {token}` à chaque requête protégée.
+
+    ## Rôles
+    | Rôle | Accès |
+    |------|-------|
+    | `admin` | Tout |
+    | `supervisor` | Farmers, transactions, remboursements, produits, catégories, utilisateurs |
+    | `operator` | Farmers, transactions, remboursements, paramètres (lecture) |
+
+  version: 1.0.0
+  contact:
+    name: Farmers Market Team
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Développement local (Docker)
+
+tags:
+  - name: Auth
+    description: Authentification et gestion de session
+  - name: Users
+    description: Gestion des comptes utilisateurs (admin + supervisor)
+  - name: Farmers
+    description: Gestion des agriculteurs
+  - name: Products
+    description: Catalogue produits
+  - name: Categories
+    description: Catégories de produits
+  - name: Transactions
+    description: Ventes (cash ou crédit)
+  - name: Debts
+    description: Dettes générées par les ventes à crédit
+  - name: Repayments
+    description: Remboursements en marchandise
+  - name: Notifications
+    description: Alertes et notifications
+  - name: Settings
+    description: Paramètres système (taux intérêt, taux kg)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SECURITY SCHEME
+# ──────────────────────────────────────────────────────────────────────────────
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token Sanctum obtenu via POST /auth/login
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # SCHEMAS
+  # ──────────────────────────────────────────────────────────────────────────
+  schemas:
+
+    # ── Auth ────────────────────────────────────────────────────────────────
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: admin@farmbridge.ci
+        password:
+          type: string
+          format: password
+          example: password123
+
+    RegisterRequest:
+      type: object
+      required: [name, email, password, password_confirmation, role]
+      properties:
+        name:
+          type: string
+          example: Jean Dupont
+        email:
+          type: string
+          format: email
+          example: jean.dupont@farmbridge.ci
+        password:
+          type: string
+          minLength: 8
+          example: secret123
+        password_confirmation:
+          type: string
+          example: secret123
+        role:
+          type: string
+          enum: [admin, supervisor, operator]
+          example: operator
+        supervisor_id:
+          type: integer
+          nullable: true
+          example: 2
+
+    AuthResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Login successful.
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+              example: 1|abc123xyz...
+            user:
+              $ref: '#/components/schemas/User'
+
+    # ── User ────────────────────────────────────────────────────────────────
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Opérateur POS Abidjan
+        email:
+          type: string
+          format: email
+          example: operateur@farmbridge.ci
+        role:
+          type: string
+          enum: [admin, supervisor, operator]
+          example: operator
+        supervisor_id:
+          type: integer
+          nullable: true
+          example: 2
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-04-30T10:00:00.000000Z"
+
+    StoreUserRequest:
+      type: object
+      required: [name, email, password, password_confirmation, role]
+      properties:
+        name:
+          type: string
+          example: Nouveau Opérateur
+        email:
+          type: string
+          format: email
+          example: operateur2@farmbridge.ci
+        password:
+          type: string
+          minLength: 8
+          example: secret123
+        password_confirmation:
+          type: string
+          example: secret123
+        role:
+          type: string
+          enum: [admin, supervisor, operator]
+        supervisor_id:
+          type: integer
+          nullable: true
+
+    # ── Farmer ──────────────────────────────────────────────────────────────
+    Farmer:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        identifier:
+          type: string
+          example: AGR-CI-001
+          description: Identifiant unique auto-généré (format AGR-CI-XXX)
+        first_name:
+          type: string
+          example: Kouassi
+        last_name:
+          type: string
+          example: Amani
+        phone:
+          type: string
+          nullable: true
+          example: "+22507010001"
+        email:
+          type: string
+          format: email
+          nullable: true
+          example: kouassi@example.com
+        state:
+          type: string
+          nullable: true
+          example: Abidjan
+        city:
+          type: string
+          nullable: true
+          example: Cocody
+        bio:
+          type: string
+          nullable: true
+          example: Producteur de cacao depuis 15 ans
+        categories:
+          type: array
+          items:
+            type: string
+          example: [vegetale, animale]
+        specialties:
+          type: array
+          items:
+            type: string
+          example: [cacao, café]
+        credit_limit:
+          type: number
+          example: 100000
+          description: Plafond de crédit en FCFA
+        current_debt:
+          type: number
+          nullable: true
+          example: 25000
+          description: Montant total de la dette restante en FCFA
+
+    StoreFarmerRequest:
+      type: object
+      required: [first_name, last_name]
+      properties:
+        first_name:
+          type: string
+          example: Kouassi
+        last_name:
+          type: string
+          example: Amani
+        identifier:
+          type: string
+          nullable: true
+          example: AGR-CI-006
+          description: Optionnel — auto-généré si absent (AGR-CI-XXX)
+        phone:
+          type: string
+          nullable: true
+          example: "+22507010005"
+        email:
+          type: string
+          format: email
+          nullable: true
+        state:
+          type: string
+          nullable: true
+          example: Abidjan
+        city:
+          type: string
+          nullable: true
+          example: Yopougon
+        address:
+          type: string
+          nullable: true
+        bio:
+          type: string
+          nullable: true
+        categories:
+          type: array
+          items:
+            type: string
+          example: [vegetale]
+        specialties:
+          type: array
+          items:
+            type: string
+          example: [maïs, manioc]
+        credit_limit:
+          type: number
+          example: 50000
+          description: Plafond de crédit en FCFA (défaut 50000)
+
+    # ── Product ─────────────────────────────────────────────────────────────
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Cacao
+        description:
+          type: string
+          nullable: true
+          example: Fèves de cacao séchées
+        price:
+          type: number
+          example: 1500
+          description: Prix en FCFA
+        unit:
+          type: string
+          example: kg
+        category_id:
+          type: integer
+          example: 1
+        category_name:
+          type: string
+          example: Produits vivriers
+
+    # ── Category ────────────────────────────────────────────────────────────
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Produits vivriers
+        description:
+          type: string
+          nullable: true
+
+    # ── Transaction ──────────────────────────────────────────────────────────
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        farmer_id:
+          type: integer
+          example: 1
+        farmer_name:
+          type: string
+          example: Kouassi Amani
+        operator_id:
+          type: integer
+          example: 3
+        operator_name:
+          type: string
+          example: Opérateur POS Abidjan
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionItem'
+        subtotal:
+          type: number
+          example: 15000
+        interest_rate:
+          type: number
+          example: 0.3
+          description: Taux d'intérêt (0.3 = 30%)
+        interest_amount:
+          type: number
+          example: 4500
+        total:
+          type: number
+          example: 19500
+          description: Total FCFA
+        payment_type:
+          type: string
+          enum: [cash, credit]
+          example: credit
+        created_at:
+          type: string
+          format: date-time
+
+    TransactionItem:
+      type: object
+      properties:
+        product_id:
+          type: integer
+          example: 1
+        product_name:
+          type: string
+          example: Cacao
+        quantity:
+          type: integer
+          example: 10
+        unit_price:
+          type: number
+          example: 1500
+
+    CreateTransactionRequest:
+      type: object
+      required: [farmer_id, payment_type, items]
+      properties:
+        farmer_id:
+          type: integer
+          example: 1
+        payment_type:
+          type: string
+          enum: [cash, credit]
+          example: credit
+        interest_rate:
+          type: number
+          example: 0.3
+          description: Obligatoire si payment_type=credit. Valeur entre 0 et 1 (0.3 = 30%)
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [product_id, quantity, unit_price]
+            properties:
+              product_id:
+                type: integer
+                example: 1
+              quantity:
+                type: integer
+                example: 10
+              unit_price:
+                type: number
+                example: 1500
+
+    # ── Debt ────────────────────────────────────────────────────────────────
+    Debt:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        farmer_id:
+          type: integer
+          example: 1
+        transaction_id:
+          type: integer
+          example: 5
+        original_amount:
+          type: number
+          example: 19500
+        remaining_amount:
+          type: number
+          example: 9750
+        status:
+          type: string
+          enum: [open, partial, paid]
+          example: partial
+        created_at:
+          type: string
+          format: date-time
+
+    # ── Repayment ────────────────────────────────────────────────────────────
+    Repayment:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        farmer_id:
+          type: integer
+          example: 1
+        farmer_name:
+          type: string
+          example: Kouassi Amani
+        commodity:
+          type: string
+          example: cacao
+        kg_received:
+          type: number
+          example: 5
+        rate_per_kg:
+          type: number
+          example: 1500
+        fcfa_value:
+          type: number
+          example: 7500
+        debt_ids:
+          type: array
+          items:
+            type: integer
+          example: [1, 2]
+        operator_name:
+          type: string
+          example: Opérateur POS Abidjan
+        created_at:
+          type: string
+          format: date-time
+
+    CreateRepaymentRequest:
+      type: object
+      required: [farmer_id, commodity, kg_received, rate_per_kg]
+      properties:
+        farmer_id:
+          type: integer
+          example: 1
+        commodity:
+          type: string
+          example: cacao
+        kg_received:
+          type: number
+          minimum: 0.001
+          example: 5
+        rate_per_kg:
+          type: number
+          minimum: 1
+          example: 1500
+          description: Taux en FCFA par kg (alias de commodity_rate_fcfa)
+
+    # ── Setting ──────────────────────────────────────────────────────────────
+    Setting:
+      type: object
+      properties:
+        key:
+          type: string
+          example: interest_rate
+        value:
+          type: string
+          example: "0.30"
+        description:
+          type: string
+          nullable: true
+
+    # ── Generic responses ────────────────────────────────────────────────────
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Opération réussie.
+
+    ErrorValidation:
+      type: object
+      properties:
+        message:
+          type: string
+          example: The given data was invalid.
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            email: ["The email field is required."]
+
+    Error401:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Unauthenticated.
+
+    Error403:
+      type: object
+      properties:
+        message:
+          type: string
+          example: This action is unauthorized.
+
+    Error404:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Ressource introuvable.
+
+# ──────────────────────────────────────────────────────────────────────────────
+# PATHS
+# ──────────────────────────────────────────────────────────────────────────────
+paths:
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # AUTH
+  # ════════════════════════════════════════════════════════════════════════════
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Créer un compte utilisateur
+      description: Inscription publique. Retourne le token Sanctum et les infos utilisateur.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        "201":
+          description: Compte créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        "422":
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorValidation'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Connexion
+      description: Retourne un token Sanctum Bearer à utiliser dans tous les appels protégés.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: admin@farmbridge.ci
+              password: password123
+      responses:
+        "200":
+          description: Connexion réussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        "422":
+          description: Identifiants invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorValidation'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Déconnexion (révoque le token)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Déconnecté
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        "401":
+          description: Non authentifié
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error401'
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Profil de l'utilisateur connecté
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Profil utilisateur
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        "401":
+          description: Non authentifié
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # USERS (admin + supervisor)
+  # ════════════════════════════════════════════════════════════════════════════
+
+  /users:
+    get:
+      tags: [Users]
+      summary: Liste des utilisateurs
+      description: Accessible aux rôles **admin** et **supervisor**.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+        "401":
+          description: Non authentifié
+        "403":
+          description: Accès interdit
+
+    post:
+      tags: [Users]
+      summary: Créer un utilisateur
+      description: Accessible aux rôles **admin** et **supervisor**.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreUserRequest'
+      responses:
+        "201":
+          description: Utilisateur créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        "422":
+          description: Données invalides
+
+  /users/{user}:
+    parameters:
+      - name: user
+        in: path
+        required: true
+        description: ID de l'utilisateur
+        schema:
+          type: integer
+          example: 1
+
+    get:
+      tags: [Users]
+      summary: Détail d'un utilisateur
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Utilisateur trouvé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        "404":
+          description: Introuvable
+
+    put:
+      tags: [Users]
+      summary: Modifier un utilisateur
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreUserRequest'
+      responses:
+        "200":
+          description: Utilisateur modifié
+        "422":
+          description: Données invalides
+
+    delete:
+      tags: [Users]
+      summary: Supprimer un utilisateur
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Supprimé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        "404":
+          description: Introuvable
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # FARMERS
+  # ════════════════════════════════════════════════════════════════════════════
+
+  /farmers:
+    get:
+      tags: [Farmers]
+      summary: Liste des agriculteurs
+      description: Retourne une liste paginée. Supports recherche par nom, identifiant, téléphone.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: per_page
+          in: query
+          description: Nombre de résultats par page (défaut 15)
+          schema:
+            type: integer
+            example: 15
+        - name: search
+          in: query
+          description: Recherche libre (prénom, nom, identifiant, téléphone)
+          schema:
+            type: string
+            example: Kouassi
+      responses:
+        "200":
+          description: Liste paginée des agriculteurs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Farmer'
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        example: 5
+                      per_page:
+                        type: integer
+                        example: 15
+                      current_page:
+                        type: integer
+                        example: 1
+        "401":
+          description: Non authentifié
+
+    post:
+      tags: [Farmers]
+      summary: Créer un agriculteur
+      description: |
+        Crée un nouvel agriculteur.
+        - L'`identifier` (AGR-CI-XXX) est **auto-généré** si non fourni.
+        - L'`operator_id` est automatiquement assigné à l'utilisateur connecté.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreFarmerRequest'
+            example:
+              first_name: Ama
+              last_name: Koné
+              phone: "+22507010010"
+              city: Bouaké
+              categories: [vegetale]
+              specialties: [maïs, igname]
+              credit_limit: 75000
+      responses:
+        "201":
+          description: Agriculteur créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Agriculteur créé avec succès.
+                  data:
+                    $ref: '#/components/schemas/Farmer'
+        "409":
+          description: Identifiant déjà utilisé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        "422":
+          description: Données invalides
+
+  /farmers/{farmer}:
+    parameters:
+      - name: farmer
+        in: path
+        required: true
+        description: ID de l'agriculteur
+        schema:
+          type: integer
+          example: 1
+
+    get:
+      tags: [Farmers]
+      summary: Détail d'un agriculteur
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Agriculteur trouvé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Farmer'
+        "404":
+          description: Agriculteur introuvable
+
+    put:
+      tags: [Farmers]
+      summary: Modifier un agriculteur
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreFarmerRequest'
+      responses:
+        "200":
+          description: Mis à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Agriculteur mis à jour avec succès.
+                  data:
+                    $ref: '#/components/schemas/Farmer'
+        "404":
+          description: Introuvable
+
+    delete:
+      tags: [Farmers]
+      summary: Supprimer un agriculteur
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Supprimé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        "404":
+          description: Introuvable
+
+  /farmers/{farmer}/debts:
+    get:
+      tags: [Farmers]
+      summary: Dettes d'un agriculteur
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: farmer
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Résumé des dettes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Debt'
+
+  /farmers/{farmer}/repayments:
+    get:
+      tags: [Farmers]
+      summary: Remboursements d'un agriculteur
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: farmer
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Liste des remboursements
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Repayment'
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # PRODUCTS
+  # ════════════════════════════════════════════════════════════════════════════
+
+  /products:
+    get:
+      tags: [Products]
+      summary: Liste des produits (public)
+      description: Route publique — aucun token requis.
+      responses:
+        "200":
+          description: Liste des produits
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+
+    post:
+      tags: [Products]
+      summary: Créer un produit (admin + supervisor)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, price, unit, category_id]
+              properties:
+                name:
+                  type: string
+                  example: Cacao
+                description:
+                  type: string
+                  nullable: true
+                price:
+                  type: number
+                  example: 1500
+                unit:
+                  type: string
+                  example: kg
+                category_id:
+                  type: integer
+                  example: 1
+      responses:
+        "201":
+          description: Produit créé
+        "422":
+          description: Données invalides
+
+  /products/{product}:
+    parameters:
+      - name: product
+        in: path
+        required: true
+        schema:
+          type: integer
+          example: 1
+
+    get:
+      tags: [Products]
+      summary: Détail d'un produit (public)
+      responses:
+        "200":
+          description: Produit trouvé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Product'
+        "404":
+          description: Introuvable
+
+    put:
+      tags: [Products]
+      summary: Modifier un produit (admin + supervisor)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                price:
+                  type: number
+                unit:
+                  type: string
+                category_id:
+                  type: integer
+      responses:
+        "200":
+          description: Mis à jour
+
+    delete:
+      tags: [Products]
+      summary: Supprimer un produit (admin + supervisor)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Supprimé
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # CATEGORIES
+  # ════════════════════════════════════════════════════════════════════════════
+
+  /categories:
+    get:
+      tags: [Categories]
+      summary: Liste des catégories (public)
+      responses:
+        "200":
+          description: Liste
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Category'
+
+    post:
+      tags: [Categories]
+      summary: Créer une catégorie (admin + supervisor)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  example: Produits vivriers
+                description:
+                  type: string
+                  nullable: true
+      responses:
+        "201":
+          description: Créée
+
+  /categories/{category}:
+    parameters:
+      - name: category
+        in: path
+        required: true
+        schema:
+          type: integer
+          example: 1
+
+    get:
+      tags: [Categories]
+      summary: Détail d'une catégorie (public)
+      responses:
+        "200":
+          description: Catégorie trouvée
+
+    put:
+      tags: [Categories]
+      summary: Modifier une catégorie (admin + supervisor)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        "200":
+          description: Mis à jour
+
+    delete:
+      tags: [Categories]
+      summary: Supprimer une catégorie (admin + supervisor)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Supprimé
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # TRANSACTIONS
+  # ════════════════════════════════════════════════════════════════════════════
+
+  /transactions:
+    get:
+      tags: [Transactions]
+      summary: Liste des transactions
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Liste paginée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Transaction'
+
+    post:
+      tags: [Transactions]
+      summary: Créer une transaction (vente)
+      description: |
+        Enregistre une vente **cash** ou **crédit**.
+        - Si `payment_type=credit`, une dette est automatiquement créée.
+        - `interest_rate` est obligatoire pour le crédit (0.3 = 30%).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransactionRequest'
+            example:
+              farmer_id: 1
+              payment_type: credit
+              interest_rate: 0.3
+              items:
+                - product_id: 1
+                  quantity: 10
+                  unit_price: 1500
+      responses:
+        "201":
+          description: Transaction créée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Transaction enregistrée avec succès.
+                  data:
+                    $ref: '#/components/schemas/Transaction'
+        "422":
+          description: Données invalides
+
+  /transactions/{transaction}:
+    get:
+      tags: [Transactions]
+      summary: Détail d'une transaction
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: transaction
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Transaction trouvée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Transaction'
+        "404":
+          description: Introuvable
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # DEBTS
+  # ════════════════════════════════════════════════════════════════════════════
+
+  /debts/{debt}:
+    get:
+      tags: [Debts]
+      summary: Détail d'une dette
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: debt
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Dette trouvée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Debt'
+        "404":
+          description: Introuvable
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # REPAYMENTS
+  # ════════════════════════════════════════════════════════════════════════════
+
+  /repayments:
+    get:
+      tags: [Repayments]
+      summary: Liste des remboursements
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Liste
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Repayment'
+
+    post:
+      tags: [Repayments]
+      summary: Enregistrer un remboursement en marchandise
+      description: |
+        L'agriculteur rembourse une dette en apportant de la marchandise.
+        La valeur FCFA calculée (`kg_received × rate_per_kg`) est déduite des dettes ouvertes.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRepaymentRequest'
+            example:
+              farmer_id: 1
+              commodity: cacao
+              kg_received: 5
+              rate_per_kg: 1500
+      responses:
+        "201":
+          description: Remboursement enregistré
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Remboursement enregistré avec succès.
+                  data:
+                    $ref: '#/components/schemas/Repayment'
+        "422":
+          description: Données invalides
+
+  /repayments/{repayment}:
+    get:
+      tags: [Repayments]
+      summary: Détail d'un remboursement
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: repayment
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        "200":
+          description: Trouvé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Repayment'
+        "404":
+          description: Introuvable
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # NOTIFICATIONS
+  # ════════════════════════════════════════════════════════════════════════════
+
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: Liste des notifications
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Liste des notifications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                          example: debt.overdue.1
+                        message:
+                          type: string
+                          example: "L'agriculteur Kouassi Amani a une dette en retard."
+                        read:
+                          type: boolean
+                          example: false
+                        created_at:
+                          type: string
+                          format: date-time
+
+  /notifications/unread-count:
+    get:
+      tags: [Notifications]
+      summary: Nombre de notifications non lues
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Compteur
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        example: 3
+
+  /notifications/read-all:
+    put:
+      tags: [Notifications]
+      summary: Marquer toutes les notifications comme lues
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Toutes marquées lues
+
+  /notifications/{key}/read:
+    put:
+      tags: [Notifications]
+      summary: Marquer une notification comme lue
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: Clé unique de la notification
+          schema:
+            type: string
+            example: debt.overdue.1
+      responses:
+        "200":
+          description: Marquée lue
+        "404":
+          description: Notification introuvable
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # SETTINGS
+  # ════════════════════════════════════════════════════════════════════════════
+
+  /settings:
+    get:
+      tags: [Settings]
+      summary: Liste des paramètres système
+      description: Accessible à tous les utilisateurs authentifiés (opérateurs inclus).
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Paramètres
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Setting'
+
+    put:
+      tags: [Settings]
+      summary: Mise à jour groupée des paramètres (admin uniquement)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Objet clé→valeur des paramètres à mettre à jour
+              example:
+                interest_rate: "0.30"
+                commodity_rate_kg: "1500"
+      responses:
+        "200":
+          description: Mis à jour
+        "403":
+          description: Accès interdit (rôle admin requis)
+
+  /settings/{key}:
+    put:
+      tags: [Settings]
+      summary: Modifier un paramètre par clé (admin uniquement)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: Clé du paramètre
+          schema:
+            type: string
+            example: interest_rate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [value]
+              properties:
+                value:
+                  type: string
+                  example: "0.25"
+      responses:
+        "200":
+          description: Paramètre mis à jour
+        "404":
+          description: Clé introuvable

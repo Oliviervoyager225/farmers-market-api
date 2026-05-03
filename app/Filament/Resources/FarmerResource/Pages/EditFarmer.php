@@ -29,8 +29,8 @@ class EditFarmer extends EditRecord
         $vegList = ['Agriculteur', 'Maraîcher', 'Arboriculteur', 'Riziculteur', 'Cacaoculteur', 'Caféiculteur', 'Horticulteur', 'Pépiniériste'];
         $aniList = ['Éleveur', 'Aviculteur', 'Boviniculteur', 'Porciniculteur', 'Pisciculteur', 'Apiculteur'];
 
-        $data['specialties_veg'] = array_intersect($specialties, $vegList);
-        $data['specialties_ani'] = array_intersect($specialties, $aniList);
+        $data['specialties_veg'] = array_values(array_intersect($specialties, $vegList));
+        $data['specialties_ani'] = array_values(array_intersect($specialties, $aniList));
 
         return $data;
     }
@@ -46,8 +46,12 @@ class EditFarmer extends EditRecord
         }
         $data['specialties'] = $specialties;
 
-        unset($data['specialties_veg']);
-        unset($data['specialties_ani']);
+        unset($data['specialties_veg'], $data['specialties_ani']);
+
+        // Conserver l'identifier existant (champ disabled, non soumis)
+        if (empty($data['identifier'])) {
+            $data['identifier'] = $this->record->identifier;
+        }
 
         return $data;
     }

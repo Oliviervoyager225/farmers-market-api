@@ -67,4 +67,21 @@ class Farmer extends Model
     {
         return (float) $this->debts()->whereIn('status', ['open', 'partial'])->sum('remaining_amount_fcfa');
     }
+
+    /**
+     * Génère le prochain identifiant automatique au format AGR-CI-001.
+     */
+    public static function generateNextIdentifier(): string
+    {
+        $identifiers = static::where('identifier', 'like', 'AGR-CI-%')->pluck('identifier');
+
+        $max = 0;
+        foreach ($identifiers as $id) {
+            if (preg_match('/AGR-CI-(\d+)$/', $id, $m)) {
+                $max = max($max, (int) $m[1]);
+            }
+        }
+
+        return 'AGR-CI-' . str_pad($max + 1, 3, '0', STR_PAD_LEFT);
+    }
 }

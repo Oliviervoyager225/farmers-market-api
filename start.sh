@@ -7,6 +7,9 @@ php artisan package:discover --ansi
 echo "==> Running migrations..."
 php artisan migrate --force
 
+echo "==> Seeding database..."
+php artisan db:seed --force
+
 echo "==> Clearing caches..."
 php artisan config:cache
 php artisan route:cache

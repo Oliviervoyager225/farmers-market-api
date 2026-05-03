@@ -34,11 +34,15 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interactio
 # Copy source
 COPY . .
 
-# Post-install scripts
-RUN composer run-script post-autoload-dump || true
-
-# Storage permissions
-RUN chmod -R 775 storage bootstrap/cache
+# Create required Laravel runtime directories (may be absent or gitignored)
+RUN mkdir -p \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/framework/cache/data \
+    storage/framework/testing \
+    storage/logs \
+    bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
 
 # Startup script
 RUN chmod +x start.sh

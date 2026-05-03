@@ -11,7 +11,6 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
@@ -80,14 +79,8 @@ class CategoryResource extends Resource
                 ->options(fn () => Category::orderBy('name')->pluck('name', 'name'))
                 ->searchable()
                 ->required()
-                ->placeholder('Choisir ou créer un nom…')
-                ->createOptionForm([
-                    TextInput::make('name')
-                        ->label('Nouveau nom de catégorie')
-                        ->required()
-                        ->maxLength(100),
-                ])
-                ->createOptionUsing(fn (array $data): string => $data['name'])
+                ->allowCustomValue()
+                ->placeholder('Choisir ou taper un nouveau nom…')
                 ->columnSpan(1),
 
             Textarea::make('description')

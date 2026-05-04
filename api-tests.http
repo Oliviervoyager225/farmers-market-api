@@ -1,5 +1,5 @@
 ### Variables (à adapter selon les résultats)
-@baseUrl = http://localhost:8000/api/v1
+@baseUrl = https://farmbridge-api-d2up.onrender.com/api/v1
 # Remplacez <VOTRE_TOKEN_ICI> par le token renvoyé lors de l'étape 1
 @token = 1|JsxhZlzO7hiIgz4K8QeOmY8rSrORNDvbi6Rz2uhmbdfb8aca
 

@@ -94,9 +94,8 @@ class FarmerResource extends Resource
                     // Identifier : affiché mais disabled (auto-généré)
                     TextInput::make('identifier')
                         ->label('Farmer ID / Identifier')
-                        ->required()
                         ->disabled()
-                        ->saved(false)   // ne pas laisser l'utilisateur écraser via le form disabled
+                        ->dehydrated(false)
                         ->placeholder('AGR-CI-001')
                         ->maxLength(50),
 

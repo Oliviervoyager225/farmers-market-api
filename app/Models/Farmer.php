@@ -82,6 +82,6 @@ class Farmer extends Model
             }
         }
 
-        return 'AGR-CI-' . str_pad($max + 1, 3, '0', STR_PAD_LEFT);
+        return 'AGR-CI-' . str_pad((string) ($max + 1), 3, '0', STR_PAD_LEFT);
     }
 }

@@ -11,6 +11,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
@@ -74,13 +75,13 @@ class CategoryResource extends Resource
                 ->placeholder('Choisir une icône…')
                 ->columnSpan(1),
 
-            Select::make('name')
+            TextInput::make('name')
                 ->label('Nom')
-                ->options(fn () => Category::orderBy('name')->pluck('name', 'name'))
-                ->searchable()
                 ->required()
-                ->allowCustomValue()
-                ->placeholder('Choisir ou taper un nouveau nom…')
+                ->maxLength(100)
+                ->unique(ignoreRecord: true)
+                ->placeholder('Ex: Engrais, Insecticides…')
+                ->helperText(fn () => 'Existants : ' . Category::orderBy('name')->pluck('name')->implode(', '))
                 ->columnSpan(1),
 
             Textarea::make('description')

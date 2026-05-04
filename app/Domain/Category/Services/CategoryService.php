@@ -8,20 +8,16 @@ use App\Domain\Category\DTOs\CategoryDTO;
 use App\Domain\Category\Repositories\CategoryRepositoryInterface;
 use App\Models\Category;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Cache;
 
 final class CategoryService
 {
-    private const CACHE_TTL = 3600;
-    private const CACHE_KEY = 'categories.all';
-
     public function __construct(
         private readonly CategoryRepositoryInterface $categoryRepository,
     ) {}
 
     public function getAll(): Collection
     {
-        return Cache::remember(self::CACHE_KEY, self::CACHE_TTL, fn () => $this->categoryRepository->all());
+        return $this->categoryRepository->all();
     }
 
     public function findOrFail(int $id): Category
@@ -35,22 +31,14 @@ final class CategoryService
 
     public function create(CategoryDTO $dto): Category
     {
-        $category = $this->categoryRepository->create($dto);
-
-        Cache::forget(self::CACHE_KEY);
-
-        return $category;
+        return $this->categoryRepository->create($dto);
     }
 
     public function update(int $id, CategoryDTO $dto): Category
     {
         $category = $this->findOrFail($id);
 
-        $updated = $this->categoryRepository->update($category, $dto);
-
-        Cache::forget(self::CACHE_KEY);
-
-        return $updated;
+        return $this->categoryRepository->update($category, $dto);
     }
 
     public function delete(int $id): void
@@ -58,7 +46,5 @@ final class CategoryService
         $category = $this->findOrFail($id);
 
         $this->categoryRepository->delete($category);
-
-        Cache::forget(self::CACHE_KEY);
     }
 }

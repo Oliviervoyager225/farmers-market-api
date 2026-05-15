@@ -22,6 +22,8 @@ info:
     name: Farmers Market Team
 
 servers:
+  - url: https://farmbridge-api-d2up.onrender.com/api/v1
+    description: Production (Render)
   - url: http://localhost:8000/api/v1
     description: Développement local (Docker)
 
